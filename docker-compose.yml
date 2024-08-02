@@ -1,8 +1,11 @@
-version: '3.8'
+version: '3.9'
+name: 'simple_bank_backend'
 
 services:
-  psql:
-    image: postgres:latest
+  postgres:
+    container_name: 'simple_bank_db'
+    image: postgres:16-alpine
+    restart: always
     environment:
       POSTGRES_DB: ${DB_DATABASE}
       POSTGRES_USER: ${DB_USERNAME}
@@ -10,7 +13,9 @@ services:
     ports:
       - "${DB_PORT}:5432"
     volumes:
-      - psql_volume:/var/lib/postgresql/data
-
-volumes:
-  psql_volume:
+      - ./data:/var/lib/postgresql/data
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M

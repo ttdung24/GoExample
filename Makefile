@@ -16,7 +16,7 @@ run:
 
 # Create DB container
 docker-run:
-	@if docker compose up 2>/dev/null; then \
+	@if docker compose up -d 2>/dev/null; then \
 		: ; \
 	else \
 		echo "Falling back to Docker Compose V1"; \
@@ -32,11 +32,22 @@ docker-down:
 		docker-compose down; \
 	fi
 
+# Migrate up
+migrateup:
+	migrate -path db/migrations -database "postgres://root:abcd1234@localhost:5431/simple_bank_db?sslmode=disable" -verbose up
+
+# Migrate down
+migratedown:
+	migrate -path db/migrations -database "postgres://root:abcd1234@localhost:5431/simple_bank_db?sslmode=disable" -verbose down
+
+# Sqlc generate
+sqlc:
+	sqlc generate
 
 # Test the application
 test:
 	@echo "Testing..."
-	@go test ./... -v
+	@go test ./... -v -cover
 
 
 # Integrations Tests for the application
@@ -67,4 +78,4 @@ watch:
 	    fi; \
 	fi
 
-.PHONY: all build run test clean
+.PHONY: all build run test clean migrateup migratedown sqlc
