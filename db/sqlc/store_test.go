@@ -16,7 +16,7 @@ func TestTransferTx(t *testing.T) {
 	fmt.Println(">> before:", account1.Balance, account2.Balance)
 
 	// run n concurrent transfer transactions
-	n := 5
+	n := 100
 	amount := int64(10)
 
 	errs := make(chan error)
@@ -102,10 +102,10 @@ func TestTransferTx(t *testing.T) {
 	}
 
 	// check the final updated balance
-	updateAccount1, err := testQueries.GetAccount(context.Background(), account1.ID)
+	updateAccount1, err := store.GetAccount(context.Background(), account1.ID)
 	require.NoError(t, err)
 
-	updateAccount2, err := testQueries.GetAccount(context.Background(), account2.ID)
+	updateAccount2, err := store.GetAccount(context.Background(), account2.ID)
 	require.NoError(t, err)
 
 	fmt.Println(">> after:", updateAccount1.Balance, updateAccount2.Balance)
@@ -120,7 +120,6 @@ func TestTransferTxDeadlock(t *testing.T) {
 	account2 := createRandomAccount(t)
 	fmt.Println(">> before:", account1.Balance, account2.Balance)
 
-	// run n concurrent transfer transactions
 	n := 100
 	amount := int64(10)
 
@@ -133,12 +132,10 @@ func TestTransferTxDeadlock(t *testing.T) {
 		if i%2 == 1 {
 			fromAccountID = account2.ID
 			toAccountID = account1.ID
-
 		}
 
 		go func() {
-			ctx := context.Background()
-			_, err := store.TransferTx(ctx, TransferTxParams{
+			_, err := store.TransferTx(context.Background(), TransferTxParams{
 				FromAccountID: fromAccountID,
 				ToAccountID:   toAccountID,
 				Amount:        amount,
@@ -148,14 +145,19 @@ func TestTransferTxDeadlock(t *testing.T) {
 		}()
 	}
 
+	for i := 0; i < n; i++ {
+		err := <-errs
+		require.NoError(t, err)
+	}
+
 	// check the final updated balance
-	updateAccount1, err := testQueries.GetAccount(context.Background(), account1.ID)
+	updatedAccount1, err := store.GetAccount(context.Background(), account1.ID)
 	require.NoError(t, err)
 
-	updateAccount2, err := testQueries.GetAccount(context.Background(), account2.ID)
+	updatedAccount2, err := store.GetAccount(context.Background(), account2.ID)
 	require.NoError(t, err)
 
-	fmt.Println(">> after:", updateAccount1.Balance, updateAccount2.Balance)
-	require.Equal(t, account1.Balance, updateAccount1.Balance)
-	require.Equal(t, account2.Balance, updateAccount2.Balance)
+	fmt.Println(">> after:", updatedAccount1.Balance, updatedAccount2.Balance)
+	require.Equal(t, account1.Balance, updatedAccount1.Balance)
+	require.Equal(t, account2.Balance, updatedAccount2.Balance)
 }
