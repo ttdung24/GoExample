@@ -1,7 +1,5 @@
 name: ci-test
 
-name: Go
-
 on:
   push:
     branches: [ "master" ]
